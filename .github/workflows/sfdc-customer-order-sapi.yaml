@@ -3,8 +3,7 @@ name: MuleSoft SAPI CI-CD
 on:
   push:
     branches:
-      - feature
-      - develop
+      - main
 
 permissions:
   contents: read
