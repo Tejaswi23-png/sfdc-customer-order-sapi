@@ -1,0 +1,23 @@
+%dw 2.0
+
+type auto_d19bb836_aef5_4f6d_8cf1_b1c8d2e98d83_Output_Attributes = {|
+  clientCertificate?: {|
+    publicKey?: {|  |}, 
+    "type"?: String, 
+    encoded?: Binary
+  |}, 
+  headers: {|  |}, 
+  listenerPath: String, 
+  method: String, 
+  queryParams: {|  |}, 
+  queryString: String, 
+  relativePath: String, 
+  remoteAddress: String, 
+  requestPath: String, 
+  requestUri: String, 
+  scheme: String, 
+  uriParams: {| env: "qa" | "prod" | "dev" |}, 
+  version: String, 
+  localAddress: String
+|}
+

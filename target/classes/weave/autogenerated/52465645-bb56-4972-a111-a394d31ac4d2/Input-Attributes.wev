@@ -1,0 +1,26 @@
+%dw 2.0
+
+type auto_52465645_bb56_4972_a111_a394d31ac4d2_Input_Attributes = {|
+  clientCertificate?: {|
+    publicKey?: {|  |}, 
+    "type"?: String, 
+    encoded?: Binary
+  |}, 
+  headers: {|  |}, 
+  listenerPath: String, 
+  method: String, 
+  queryParams: {|
+    customerId?: String, 
+    status?: "Activated" | "Draft" | "Cancelled"
+  |}, 
+  queryString: String, 
+  relativePath: String, 
+  remoteAddress: String, 
+  requestPath: String, 
+  requestUri: String, 
+  scheme: String, 
+  uriParams: {| env: "qa" | "prod" | "dev" |}, 
+  version: String, 
+  localAddress: String
+|}
+

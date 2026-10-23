@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce-composite="http://www.mulesoft.org/schema/mule/salesforce-composite" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce-composite http://www.mulesoft.org/schema/mule/salesforce-composite/current/mule-salesforce-composite.xsd">
+
+	<sub-flow name="post-customer-flow-Sub_Flow" doc:id="058697ef-eaf3-4e7c-9171-c5d12f7934ff" >
+		<logger level="INFO" doc:name="Log-started" message="Creating Account for: #[payload]"/>
+		<set-variable variableName="customerRequest" value="#[payload]" doc:name="Save original request"/>
+		<try doc:name="Try Create Account">
+			<ee:transform doc:name="Build Account Payload" doc:id="6bfee145-864e-4c57-b99b-f1ced24f8b54" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	FirstName: vars.customerRequest.firstName,
+	LastName: vars.customerRequest.lastName,
+	email__c: vars.customerRequest.email,
+	billingAddress__c: vars.customerRequest.address,
+	phone__c: vars.customerRequest.phone
+}]]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<salesforce:create type="Account" doc:name="Create Account" doc:id="5b0be824-1e59-4a15-9b58-8e8bd0fe54d5" config-ref="Salesforce_Config"/>
+			<ee:transform doc:name="Build Success/Failure Response">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var result = payload.items[0]
+---
+if (result.successful and result.payload.success)
+	{
+		success: true,
+		accountId: result.payload.id
+	}
+else
+	{
+		success: false,
+		message: "Account creation failed",
+		errors: result.payload.errors default [result.message default "Unknown error"]
+	}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<error-handler>
+				<on-error-continue type="ANY">
+					<logger level="ERROR" doc:name="Log Error" message="Account creation failed: #[error.description]"/>
+					<ee:transform doc:name="Build Error Response">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	success: false,
+	message: "Account creation failed",
+	errorType: error.errorType.identifier default "UNKNOWN",
+	errors: [error.description default "Unknown error"]
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Log-end" doc:id="ac94ad6b-93a6-4285-a7f8-62b19f493f0f" message="Final result: #[payload]"/>
+	</sub-flow>
+
+	<sub-flow name="get-all-customer-Sub_Flow" doc:id="e26a5606-3b13-42e6-a309-0af31aa893f9" >
+		<logger level="INFO" doc:name="Log-started" message="get-all-customer-started"/>
+		<try doc:name="Try Query">
+			<salesforce:query doc:name="Query" doc:id="915fcafc-dc35-4f4a-b478-419d3e2a1920" config-ref="Salesforce_Config">
+				<salesforce:salesforce-query ><![CDATA[SELECT Id,email__c,billingAddress__c,FirstName,LastName,ShippingAddress,Phone FROM Account]]></salesforce:salesforce-query>
+			</salesforce:query>
+			<ee:transform doc:name="Build Success Response" doc:id="4649322a-54a4-4682-a72b-b6b4c47257d5" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	success: true,
+	records: payload
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<error-handler>
+				<on-error-continue type="ANY">
+					<logger level="ERROR" message="Get customers failed: #[error.description]"/>
+					<ee:transform doc:name="Build Error Response">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	success: false,
+	message: "Failed to retrieve customers",
+	errors: [error.description default "Unknown error"]
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Log-end" message="get-all-customer-end"/>
+	</sub-flow>
+
+	<sub-flow name="get-customer-by-customerId-Sub_Flow" doc:id="91bca1e9-5520-44b2-95da-ab213909c23e" >
+		<logger level="INFO" doc:name="Log-started" message="get-customer-by-customerId-started"/>
+		<try doc:name="Try Query">
+			<salesforce:query doc:name="Query" doc:id="c3a3881a-1426-4e20-87e1-c64b3ca0c2a8" config-ref="Salesforce_Config" >
+				<salesforce:salesforce-query ><![CDATA[SELECT Id,email__c,billingAddress__c,FirstName,LastName,ShippingAddress,Phone FROM Account WHERE Id = ':customerId']]></salesforce:salesforce-query>
+				<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	"customerId" : vars.customerId
+}]]]></salesforce:parameters>
+			</salesforce:query>
+			<ee:transform doc:name="Build Success/NotFound Response" doc:id="a1469aca-b154-4b64-a09e-78a89a6b2d9c" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if (isEmpty(payload))
+	{
+		success: false,
+		notFound: true,
+		message: "Customer not found"
+	}
+else
+	{
+		success: true,
+		record: payload[0]
+	}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<error-handler>
+				<on-error-continue type="ANY">
+					<logger level="ERROR" message="Get customer by Id failed: #[error.description]"/>
+					<ee:transform doc:name="Build Error Response">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	success: false,
+	message: "Failed to retrieve customer",
+	errors: [error.description default "Unknown error"]
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Log-end" message="get-customer-by-customerId-end"/>
+	</sub-flow>
+
+	<sub-flow name="delete-customer-by-customerId-Sub_Flow" doc:id="725130d4-9cdd-4260-be8d-0b8c89bd3e4f" >
+		<logger level="INFO" doc:name="Log-started" message="delete-customer-by-customerId-started"/>
+		<try doc:name="Try Delete">
+			<ee:transform doc:name="Transform Message" doc:id="b642522d-aaf8-4aed-9bdc-eee3bda26d6d" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+[vars.customerId]]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<salesforce:delete doc:name="Delete" doc:id="9b442e14-7a4d-4e1d-8fc1-13ff653d6572" config-ref="Salesforce_Config" />
+			<logger level="INFO" doc:name="Logger" doc:id="6f5bcbb4-5490-4f2c-b749-f26dff2a7683" message="#[payload]"/>
+			<ee:transform doc:name="Build Success/Failure Response" doc:id="2e34057d-e68f-490c-802d-356b1ab5b48d" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var result = payload.items[0]
+---
+if (result.successful and result.payload.success)
+	{
+		success: true,
+		message: "Customer deleted successfully"
+	}
+else
+	{
+		success: false,
+		message: "Delete rejected by Salesforce",
+		errors: result.payload.errors default [result.message default "Unknown error"]
+	}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<error-handler>
+				<on-error-continue type="ANY">
+					<logger level="ERROR" message="Delete customer failed: #[error.description]"/>
+					<ee:transform doc:name="Build Error Response">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	success: false,
+	message: "Failed to delete customer",
+	errors: [error.description default "Unknown error"]
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Log-end" message="delete-customer-by-customerId-end"/>
+	</sub-flow>
+</mule>

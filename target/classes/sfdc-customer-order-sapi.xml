@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+    <http:listener-config name="sfdc-customer-order-sapi-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="${https.port}" readTimeout="${https.timeout}"/>
+    </http:listener-config>
+    <apikit:config name="sfdc-customer-order-sapi-config" api="resource::1b09f0a8-fca0-4da3-87c7-a6cd5cb7174a:sfdc-customer-order-sapi:1.0.2:raml:zip:sfdc-customer-order-sapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="b8959851-ceaa-47dc-b1c6-e1f2a85b40a5" >
+		<http:request-connection >
+			<http:proxy-config >
+				<http:proxy />
+			</http:proxy-config>
+		</http:request-connection>
+		<http:default-headers />
+	</http:request-config>
+	<flow name="sfdc-customer-order-sapi-main">
+        <http:listener config-ref="sfdc-customer-order-sapi-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+		<logger level="INFO" doc:name="Aduit Logg" doc:id="4ec8f697-aa8c-4821-98b2-0d2ff6444ada" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{auditvariable :  'Request Info | Method: ' ++ attributes.method as String ++&#10;          ' | Path: ' ++ attributes.rawRequestPath as String ++&#10;          ' | CorrelationId: ' ++ correlationId as String&#10;          &#10;          }]"/>
+		<apikit:router config-ref="sfdc-customer-order-sapi-config" />
+        <error-handler ref="global-error-handler" />
+    </flow>
+	<flow name="sfdc-customer-order-sapi-console">
+        <http:listener config-ref="sfdc-customer-order-sapi-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="sfdc-customer-order-sapi-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+
+    <flow name="delete:\customers\(customerId):sfdc-customer-order-sapi-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="customerId">attributes.uriParams.'customerId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref doc:name="Flow Reference" name="delete-customer-by-customerId-Sub_Flow"/>
+        <choice doc:name="Choice">
+            <when expression="#[not (payload.success default false)]">
+                <set-variable variableName="errorDetails" value="#[payload.errors default []]"/>
+                <raise-error type="APP:VALIDATION" description="#[payload.message default 'Failed to delete customer']"/>
+            </when>
+        </choice>
+    </flow>
+
+    <flow name="delete:\orders\(orderId):sfdc-customer-order-sapi-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orderId">attributes.uriParams.'orderId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref doc:name="Flow Reference" name="delete-order-flow-Sub_Flow"/>
+        <choice doc:name="Choice">
+            <when expression="#[not (payload.success default false)]">
+                <set-variable variableName="errorDetails" value="#[payload.errors default []]"/>
+                <raise-error type="APP:VALIDATION" description="#[payload.message default 'Failed to delete order']"/>
+            </when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="4471a06a-9906-4619-b894-60c55b75f3bc" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+        </choice>
+    </flow>
+
+    <flow name="get:\customers\(customerId):sfdc-customer-order-sapi-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="customerId">attributes.uriParams.'customerId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref doc:name="Flow Reference" name="get-customer-by-customerId-Sub_Flow"/>
+        <choice doc:name="Choice">
+            <when expression="#[payload.notFound default false]">
+                <raise-error type="APP:NOT_FOUND" description="#[payload.message default ('Customer ' ++ vars.customerId ++ ' was not found')]"/>
+            </when>
+            <when expression="#[not (payload.success default false)]">
+                <raise-error type="APP:INTERNAL" description="#[payload.message default 'Failed to retrieve customer']"/>
+            </when>
+        </choice>
+    </flow>
+
+    <flow name="get:\orders\(orderId):sfdc-customer-order-sapi-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="orderId">attributes.uriParams.'orderId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <flow-ref doc:name="Flow Reference" name="get-order-by-orderId-Sub_Flow"/>
+        <choice doc:name="Choice">
+            <when expression="#[payload.notFound default false]">
+                <raise-error type="APP:NOT_FOUND" description="#[payload.message default ('Order ' ++ vars.orderId ++ ' was not found')]"/>
+            </when>
+            <when expression="#[not (payload.success default false)]">
+                <raise-error type="APP:INTERNAL" description="#[payload.message default 'Failed to retrieve order']"/>
+            </when>
+        </choice>
+    </flow>
+
+    <flow name="get:\customers:sfdc-customer-order-sapi-config">
+        <flow-ref doc:name="Flow Reference" name="get-all-customer-Sub_Flow"/>
+        <choice doc:name="Choice">
+            <when expression="#[not (payload.success default false)]">
+                <raise-error type="APP:INTERNAL" description="#[payload.message default 'Failed to retrieve customers']"/>
+            </when>
+        </choice>
+    </flow>
+
+    <flow name="get:\orders:sfdc-customer-order-sapi-config">
+        <flow-ref doc:name="Flow Reference" name="get-order-Sub_Flow"/>
+        <choice doc:name="Choice">
+            <when expression="#[not (payload.success default false)]">
+                <raise-error type="APP:INTERNAL" description="#[payload.message default 'Failed to retrieve orders']"/>
+            </when>
+        </choice>
+    </flow>
+
+    <flow name="post:\customers:application\json:sfdc-customer-order-sapi-config">
+        <flow-ref doc:name="Flow Reference" name="post-customer-flow-Sub_Flow"/>
+        <choice doc:name="Choice">
+            <when expression="#[not (payload.success default false)]">
+                <set-variable variableName="errorDetails" value="#[payload.errors default []]"/>
+                <raise-error type="APP:VALIDATION" description="#[payload.message default 'Account creation failed']"/>
+            </when>
+        </choice>
+    </flow>
+
+    <flow name="post:\orders:application\json:sfdc-customer-order-sapi-config">
+        <flow-ref doc:name="Flow Reference" name="post-order-Sub_Flow"/>
+        <choice doc:name="Choice">
+            <when expression="#[not (payload.success default false)]">
+                <set-variable variableName="errorDetails" value="#[payload.results default []]"/>
+                <raise-error type="APP:VALIDATION" description="#[payload.message default ('Order creation failed for ' ++ ((payload.failedItems default 0) as String) ++ ' of ' ++ ((payload.totalItems default 0) as String) ++ ' item(s)')]"/>
+            </when>
+        </choice>
+    </flow>
+</mule>

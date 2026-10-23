@@ -1,0 +1,7 @@
+%dw 2.0
+
+type auto_52465645_bb56_4972_a111_a394d31ac4d2_Output_Payload = Array<{  totalAmount: Number,   customerId: String,   id?: String,   orderDate: String,   items: Array<{    unitPrice: Number,     productCode: String,     quantity: Number,     _?: Any  }>, 
+  status: "Activated" | "Draft" | "Cancelled", 
+  _?: Any
+}>
+

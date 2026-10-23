@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
+	<sub-flow name="delete-order-flow-Sub_Flow" doc:id="e9ca0d19-5a8b-4912-aabd-045ec0f33e85" >
+		<logger level="INFO" doc:name="Log-started" message="delete-order-flow-started"/>
+		<try doc:name="Try Delete">
+			<ee:transform doc:name="Transform Message" doc:id="1e3f926b-3897-4cfd-8887-ffc1a7a3a44b" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+[vars.orderId]]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<salesforce:delete doc:name="Delete" doc:id="dee0c8ea-71a5-4481-b973-3d0f2d7b86cd" config-ref="Salesforce_Config"/>
+			<ee:transform doc:name="Build Success/Failure Response" doc:id="d7a79907-5be9-4b24-bc53-5333c3f5923e" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var result = payload.items[0]
+---
+if (result.successful and result.payload.success)
+	{
+		success: true,
+		message: "Order deleted successfully"
+	}
+else
+	{
+		success: false,
+		message: "Delete rejected by Salesforce",
+		errors: result.payload.errors default [result.message default "Unknown error"]
+	}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<error-handler>
+				<on-error-continue type="ANY">
+					<logger level="ERROR" message="Delete order failed: #[error.description]"/>
+					<ee:transform doc:name="Build Error Response">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	success: false,
+	message: "Failed to delete order",
+	errors: [error.description default "Unknown error"]
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Log-end" message="delete-order-flow-end"/>
+	</sub-flow>
+
+	<sub-flow name="get-order-by-orderId-Sub_Flow" doc:id="77d86501-5d0f-48d6-921f-c350778d82a1" >
+		<logger level="INFO" doc:name="Log-started" message="get-order-by-orderId-started"/>
+		<try doc:name="Try Query">
+			<salesforce:query doc:name="Query" doc:id="8a33da05-4d38-4f27-840b-7c2cc54dc21f" config-ref="Salesforce_Config" >
+				<salesforce:salesforce-query ><![CDATA[SELECT customerId__c,orderDate__c,productCode__c,quantity__c,status__c,totalAmount__c,unitPrice__c FROM order__c where Id = ':orderId']]></salesforce:salesforce-query>
+				<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	"orderId" : vars.orderId
+}]]]></salesforce:parameters>
+			</salesforce:query>
+			<ee:transform doc:name="Build Success/NotFound Response" doc:id="fd38d140-95f3-4caa-a054-b08e91567516" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if (isEmpty(payload))
+	{
+		success: false,
+		notFound: true,
+		message: "Order not found"
+	}
+else
+	{
+		success: true,
+		record: payload[0]
+	}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<error-handler>
+				<on-error-continue type="ANY">
+					<logger level="ERROR" message="Get order by Id failed: #[error.description]"/>
+					<ee:transform doc:name="Build Error Response">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	success: false,
+	message: "Failed to retrieve order",
+	errors: [error.description default "Unknown error"]
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Log-end" message="get-order-by-orderId-end"/>
+	</sub-flow>
+
+	<sub-flow name="get-order-Sub_Flow" doc:id="876f9db5-0559-4543-95a1-221451b45121" >
+		<logger level="INFO" doc:name="Log-started" message="get-order-started"/>
+		<try doc:name="Try Query">
+			<salesforce:query doc:name="Query" doc:id="de0c17f2-6a86-4b84-97f1-dd8752e00a50" config-ref="Salesforce_Config">
+				<salesforce:salesforce-query ><![CDATA[SELECT customerId__c,orderDate__c,productCode__c,quantity__c,status__c,totalAmount__c,unitPrice__c FROM order__c]]></salesforce:salesforce-query>
+			</salesforce:query>
+			<ee:transform doc:name="Build Success Response" doc:id="3001dfd6-c544-43eb-bf39-4920c8776d3d" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	success: true,
+	records: payload
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<error-handler>
+				<on-error-continue type="ANY">
+					<logger level="ERROR" message="Get orders failed: #[error.description]"/>
+					<ee:transform doc:name="Build Error Response">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	success: false,
+	message: "Failed to retrieve orders",
+	errors: [error.description default "Unknown error"]
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Log-end" message="get-order-end"/>
+	</sub-flow>
+
+	<sub-flow name="post-order-Sub_Flow" doc:id="387c688f-f562-42ad-98aa-879c1161d4d0" >
+		<logger level="INFO" doc:name="Logger" message="Creating order for: #[payload]"/>
+		<set-variable value="#[payload.customerId]" doc:name="Set Variable customerId" variableName="customerId"/>
+		<set-variable value="#[payload.status]" doc:name="Set Variable status" variableName="status"/>
+		<set-variable value="#[payload.orderDate]" doc:name="Set Variable orderDate" variableName="orderDate"/>
+		<set-variable value="#[payload.items]" doc:name="Save items" variableName="orderItems"/>
+		<set-variable value="#[[]]" doc:name="Init results accumulator" variableName="orderResults"/>
+
+		<foreach doc:name="For Each" collection="#[vars.orderItems]">
+			<set-variable variableName="currentItem" value="#[payload]" doc:name="Save current item"/>
+			<try doc:name="Try Create Line Item">
+			<ee:transform doc:name="Build Line Item Payload">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	customerId__c: vars.customerId,
+	orderDate__c: vars.orderDate,
+	productCode__c: vars.currentItem.productCode,
+	quantity__c: vars.currentItem.quantity,
+	status__c: vars.status,
+	totalAmount__c: vars.currentItem.quantity * vars.currentItem.unitPrice,
+	unitPrice__c: vars.currentItem.unitPrice
+}]]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<salesforce:create doc:name="Create" config-ref="Salesforce_Config" type="order__c" target="orderItemResult"/>
+				<set-variable variableName="orderResults" value="#[%dw 2.0
+output application/json
+var result = vars.orderItemResult.items[0]
+---
+(vars.orderResults default []) + [{
+	success: (result.successful default false) and (result.payload.success default false),
+	productCode: vars.currentItem.productCode,
+	id: result.payload.id,
+	errors: result.payload.errors default []
+}]]"/>
+			<error-handler>
+					<on-error-continue type="ANY">
+						<logger level="ERROR" message="Line item creation failed for productCode=#[vars.currentItem.productCode]: #[error.description]"/>
+						<set-variable variableName="orderResults" value="#[(vars.orderResults default []) + [{ success: false, productCode: vars.currentItem.productCode, message: error.description default 'Unknown error' }]]"/>
+					</on-error-continue>
+				</error-handler>
+		</try>
+		</foreach>
+
+		<ee:transform doc:name="Build Final Response">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var results = vars.orderResults default []
+var failed = results filter (($.success default false) == false)
+---
+{
+	success: isEmpty(failed),
+	totalItems: sizeOf(results),
+	failedItems: sizeOf(failed),
+	results: results
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" message="Order creation complete: #[payload]"/>
+	</sub-flow>
+</mule>
