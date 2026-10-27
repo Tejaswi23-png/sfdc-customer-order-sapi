@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - dev
+      - uat
   workflow_dispatch:
     inputs:
       environment:
