@@ -1,0 +1,15 @@
+name: Develop - Build and Deploy to Dev
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  call-workflow:
+    uses: ./.github/workflows/mule-deploy-workflow.yml
+    with:
+      deploy: true
+      anypoint_env: Dev
+      app_name: sfdc-customer-order-sapi-v1-dev
+    secrets: inherit
