@@ -19,5 +19,5 @@ jobs:
   pipeline:
     uses: Tejaswi23-png/common-pipeline/.github/workflows/mulesoft-sapi-ci-cd.yml@main
     with:
-      environment: ${{ inputs.environment || 'dev' }}
+      environment: ${{ vars.DEPLOY_ENVIRONMENT }}
     secrets: inherit
