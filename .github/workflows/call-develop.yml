@@ -1,15 +1,14 @@
-name: Develop - Build and Deploy to Dev
+name: Dev - Build and Deploy to Dev
 
 on:
   push:
     branches:
-      - develop
+      - dev
+  workflow_dispatch:
 
 jobs:
-  call-workflow:
-    uses: Tejaswi23-png/sfdc-customer-order-sapi/.github/workflows/sfdc-customer-order-sapi.yaml@main
+  pipeline:
+    uses: Tejaswi23-png/common-pipeline/.github/workflows/mulesoft-sapi-ci-cd.yml@main
     with:
-      deploy: true
-      anypoint_env: Dev
-      app_name: sfdc-customer-order-sapi-v1-dev
+      environment: dev
     secrets: inherit
