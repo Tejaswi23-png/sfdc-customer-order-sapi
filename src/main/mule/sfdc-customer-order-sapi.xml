@@ -4,14 +4,6 @@
         <http:listener-connection host="0.0.0.0" port="${https.port}" readTimeout="${https.timeout}"/>
     </http:listener-config>
     <apikit:config name="sfdc-customer-order-sapi-config" api="resource::1b09f0a8-fca0-4da3-87c7-a6cd5cb7174a:sfdc-customer-order-sapi:1.0.2:raml:zip:sfdc-customer-order-sapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="b8959851-ceaa-47dc-b1c6-e1f2a85b40a5" >
-		<http:request-connection >
-			<http:proxy-config >
-				<http:proxy />
-			</http:proxy-config>
-		</http:request-connection>
-		<http:default-headers />
-	</http:request-config>
 	<flow name="sfdc-customer-order-sapi-main">
         <http:listener config-ref="sfdc-customer-order-sapi-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">

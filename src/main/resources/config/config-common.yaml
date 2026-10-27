@@ -3,5 +3,5 @@ https:
   timeout: "30000"
   
 sfdc:
-  rec: "2"
-  sfd: "2000"
+  fre: "2"
+  rec: "2000"
