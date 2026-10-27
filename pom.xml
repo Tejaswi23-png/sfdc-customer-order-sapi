@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>${business.group.id}</groupId>
+	<groupId>1b09f0a8-fca0-4da3-87c7-a6cd5cb7174a</groupId>
 	<artifactId>sfdc-customer-order-sapi</artifactId>
 	<version>1.0.5</version>
 	<packaging>mule-application</packaging>
@@ -34,10 +34,10 @@
 						<uri>https://anypoint.mulesoft.com</uri>
 						<provider>MC</provider>
 						<muleVersion>4.12.2</muleVersion>
-						<connectedAppClientId>${ca.client.id}</connectedAppClientId>
-						<connectedAppClientSecret>${ca.client.secret}</connectedAppClientSecret>
+						<connectedAppClientId>75094f2bdfeb4656a0c85c345996aa09</connectedAppClientId>
+						<connectedAppClientSecret>FFBf1C1Eb4154889a51518703CcCDaC2</connectedAppClientSecret>
 						<connectedAppGrantType>client_credentials</connectedAppGrantType>
-						<businessGroupId>${business.group.id}</businessGroupId>
+						<businessGroupId>1b09f0a8-fca0-4da3-87c7-a6cd5cb7174a</businessGroupId>
 						<environment>${ch.environment}</environment>
 						<target>Cloudhub-US-East-2</target>
 						<applicationName>sfdc-customer-order-sapi-v1</applicationName>
@@ -49,8 +49,8 @@
 							<generateDefaultPublicUrl>true</generateDefaultPublicUrl>
 						</deploymentSettings>
 						<properties>
-							<anypoint.platform.client_id>${platform.client.id}</anypoint.platform.client_id>
-							<anypoint.platform.client_secret>${platform.client.secret}</anypoint.platform.client_secret>
+							<anypoint.platform.client_id>f0f01b48a9e4438a87305926048ae7be</anypoint.platform.client_id>
+							<anypoint.platform.client_secret>Ca38E80081bD4e928955b1400c9D7DbD</anypoint.platform.client_secret>
 							<mule.key>${mule.key}</mule.key>
 							<env>${env}</env>
 						</properties>
@@ -65,7 +65,7 @@
 		<repository>
 			<id>anypoint-exchange-v3</id>
 			<name>Anypoint Exchange</name>
-			<url>https://maven.anypoint.mulesoft.com/api/v3/organizations/${business.group.id}/maven</url>
+			<url>https://maven.anypoint.mulesoft.com/api/v3/organizations/1b09f0a8-fca0-4da3-87c7-a6cd5cb7174a/maven</url>
 			<layout>default</layout>
 		</repository>
 	</distributionManagement>
