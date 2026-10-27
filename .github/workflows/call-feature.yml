@@ -1,10 +1,10 @@
 name: SAPI CI-CD
 
 on:
-  push:
+  pull_request:
     branches:
-      - feature
-  workflow_dispatch: 
+      - dev
+  workflow_dispatch:
     inputs:
       environment:
         description: Environment to deploy to
@@ -19,5 +19,5 @@ jobs:
   pipeline:
     uses: Tejaswi23-png/common-pipeline/.github/workflows/mulesoft-sapi-ci-cd.yml@main
     with:
-      environment:  ${{ vars.ANYPOINT_ENVIRONMENT }}
+      environment: ${{ inputs.environment || 'dev' }}
     secrets: inherit
