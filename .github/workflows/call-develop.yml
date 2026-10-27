@@ -7,7 +7,7 @@ on:
 
 jobs:
   call-workflow:
-    uses: ./.github/workflows/mule-deploy-workflow.yml
+    uses: Tejaswi23-png/sfdc-customer-order-sapi/.github/workflows/sfdc-customer-order-sapi.yaml@main
     with:
       deploy: true
       anypoint_env: Dev
