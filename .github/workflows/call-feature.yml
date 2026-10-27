@@ -1,15 +1,14 @@
-name: Feature - Build Only
+name: SAPI CI-CD
 
 on:
   push:
     branches:
       - feature
+  workflow_dispatch:
 
 jobs:
-  call-workflow:
-    uses: ./.github/workflows/mule-deploy-workflow.yml
+  pipeline:
+    uses: Tejaswi23-png/common-pipeline/.github/workflows/mulesoft-sapi-ci-cd.yml@main
     with:
-      deploy: false
-      anypoint_env: Dev
-      app_name: sfdc-customer-order-sapi-v1-dev
+      environment: dev
     secrets: inherit
