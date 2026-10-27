@@ -1,68 +1,70 @@
-name: MuleSoft SAPI CI-CD
+name: Reusable Mule Build and Deploy
 
 on:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: read
+  workflow_call:
+    inputs:
+      deploy:
+        description: "true = also deploy to Runtime Manager, false = build and test only"
+        type: boolean
+        default: false
+      anypoint_env:
+        description: "Exact environment name in Anypoint (e.g. Dev, QA, Sandbox)"
+        type: string
+        default: Dev
+      app_name:
+        description: "Application name in Runtime Manager"
+        type: string
+        required: true
 
 jobs:
-  build:
-    name: Build and publish to Exchange
+  build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up Java 17 and Maven cache
         uses: actions/setup-java@v4
         with:
-          distribution: zulu
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
           cache: maven
 
-      - name: Build and publish to Exchange
-        run: >
-          mvn --batch-mode clean deploy
-          --settings .settings/settings.xml
-          -DskipMunitTests
-          -Dbusiness.group.id=1b09f0a8-fca0-4da3-87c7-a6cd5cb7174a
+      - name: Configure Maven access to Anypoint Exchange
         env:
-          CA_CLIENT_ID: 75094f2bdfeb4656a0c85c345996aa09
-          CA_CLIENT_SECRET: FFBf1C1Eb4154889a51518703CcCDaC2
+          CLIENT_ID: ${{ secrets.CONNECTED_APP_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CONNECTED_APP_CLIENT_SECRET }}
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOT
+          <settings>
+            <servers>
+              <server>
+                <id>anypoint-exchange-v3</id>
+                <username>~~~Client~~~</username>
+                <password>${CLIENT_ID}~?~${CLIENT_SECRET}</password>
+              </server>
+            </servers>
+          </settings>
+          EOT
 
-  deploy:
-    name: Deploy to CloudHub 2.0
-    needs: build
-    runs-on: ubuntu-latest
+      - name: Build and run MUnit tests
+        run: mvn -B clean package
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
-          distribution: zulu
-          java-version: '17'
-          cache: maven
+          name: mule-app
+          path: target/*.jar
 
-      - name: Deploy to CloudHub 2.0
-        run: >
-          mvn --batch-mode clean package mule:deploy
-          --settings .maven/settings.xml
-          -DskipMunitTests
-          -Dbusiness.group.id=1b09f0a8-fca0-4da3-87c7-a6cd5cb7174a
-          -Dca.client.id=75094f2bdfeb4656a0c85c345996aa09
-          -Dca.client.secret=FFBf1C1Eb4154889a51518703CcCDaC2
-          -Dch.environment=Sandbox
-          -Dplatform.client.id=f0f01b48a9e4438a87305926048ae7be
-          -Dplatform.client.secret=Ca38E80081bD4e928955b1400c9D7DbD
-          -Dmule.key=mule
-          -Denv=dev
+      - name: Deploy to Runtime Manager
+        if: ${{ inputs.deploy }}
         env:
-          CA_CLIENT_ID: 75094f2bdfeb4656a0c85c345996aa09
-          CA_CLIENT_SECRET: FFBf1C1Eb4154889a51518703CcCDaC2
+          CLIENT_ID: ${{ secrets.CONNECTED_APP_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CONNECTED_APP_CLIENT_SECRET }}
+        run: |
+          mvn -B deploy -DmuleDeploy -DskipTests \
+            -Danypoint.client.id="$CLIENT_ID" \
+            -Danypoint.client.secret="$CLIENT_SECRET" \
+            -Danypoint.env="${{ inputs.anypoint_env }}" \
+            -Dapp.name="${{ inputs.app_name }}"
