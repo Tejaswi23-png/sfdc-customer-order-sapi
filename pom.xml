@@ -38,7 +38,7 @@
 						<connectedAppClientSecret>${ca.client.secret}</connectedAppClientSecret>
 						<connectedAppGrantType>client_credentials</connectedAppGrantType>
 						<businessGroupId>${business.group.id}</businessGroupId>
-						<environment>${ch.environment}</environment>
+						<environment>Sandbox</environment>
 						<target>Cloudhub-US-East-2</target>
 						<applicationName>sfdc-customer-order-sapi-v1</applicationName>
 						<replicas>1</replicas>
@@ -51,7 +51,7 @@
 						<properties>
 							<anypoint.platform.client_id>${platform.client.id}</anypoint.platform.client_id>
 							<anypoint.platform.client_secret>${platform.client.secret}</anypoint.platform.client_secret>
-							<mule.key>${mule.key}</mule.key>
+							<key>${key}</key>
 							<env>${env}</env>
 						</properties>
 					</cloudhub2Deployment>
