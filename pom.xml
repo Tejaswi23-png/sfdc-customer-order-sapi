@@ -3,11 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>1b09f0a8-fca0-4da3-87c7-a6cd5cb7174a</groupId>
-	<artifactId>sfdc-customer-order-sapi</artifactId>
+	<artifactId>sfdc-customer-order-sapi-v1</artifactId>
 	<version>1.0.5</version>
 	<packaging>mule-application</packaging>
 
-	<name>sfdc-customer-order-sapi-</name>
+	<name>sfdc-customer-order-sapi-v1</name>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -38,7 +38,7 @@
 						<connectedAppClientSecret>${ca.client.secret}</connectedAppClientSecret>
 						<connectedAppGrantType>client_credentials</connectedAppGrantType>
 						<businessGroupId>${business.group.id}</businessGroupId>
-						<environment>Sandbox</environment>
+						<environment>${ch.environment}</environment>
 						<target>Cloudhub-US-East-2</target>
 						<applicationName>sfdc-customer-order-sapi-v1</applicationName>
 						<replicas>1</replicas>
@@ -51,7 +51,7 @@
 						<properties>
 							<anypoint.platform.client_id>${platform.client.id}</anypoint.platform.client_id>
 							<anypoint.platform.client_secret>${platform.client.secret}</anypoint.platform.client_secret>
-							<key>${key}</key>
+							<key>${mule.key}</key>
 							<env>${env}</env>
 						</properties>
 					</cloudhub2Deployment>
@@ -61,14 +61,14 @@
 		</plugins>
 	</build>
 
-<distributionManagement>
-  <repository>
-    <id>anypoint-exchange-v3</id>
-    <name>Anypoint Exchange</name>
-    <url>https://maven.anypoint.mulesoft.com/api/v3/organizations/${business.group.id}/maven</url>
-    <layout>default</layout>
-  </repository>
-</distributionManagement>
+	<distributionManagement>
+		<repository>
+			<id>anypoint-exchange-v3</id>
+			<name>Anypoint Exchange</name>
+			<url>https://maven.anypoint.mulesoft.com/api/v3/organizations/${business.group.id}/maven</url>
+			<layout>default</layout>
+		</repository>
+	</distributionManagement>
 
 	<dependencies>
 		<dependency>
