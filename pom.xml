@@ -40,7 +40,7 @@
 						<businessGroupId>${business.group.id}</businessGroupId>
 						<environment>${ch.environment}</environment>
 						<target>Cloudhub-US-East-2</target>
-						<applicationName>sfdc-customer-order-sapi-v1</applicationName>
+						<applicationName>${application.name}</applicationName>
 						<replicas>1</replicas>
 						<vCores>0.1</vCores>
 						<deploymentSettings>
